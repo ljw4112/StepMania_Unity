@@ -7,7 +7,7 @@ namespace Runtime.Object.Note
     {
         private static Color Bit4Color = Color.red;
         private static Color Bit8Color = Color.blue;
-        private static Color Bit12Color = new(102, 51, 153, 255);
+        private static Color Bit12Color = new(102 / 255f, 51 / 255f, 153 / 255f, 255 / 255f);
         private static Color Bit16Color = Color.yellow;
         private static Color Bit24Color = Color.magenta;
         private static Color Bit32Color = Color.cyan;

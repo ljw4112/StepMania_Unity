@@ -1,37 +1,50 @@
-﻿using UnityEngine;
+﻿using Runtime.Metronome;
+using UnityEngine;
 
 namespace Runtime.Data
 {
     public class AudioManager : MonoSingleton<AudioManager>
     {
-        private AudioSource[] _tickAudioSource;
+        private AudioSource _musicAudioSource;
+        
+        [SerializeField] private AudioClip _musicAudioClip;
+
+        private AudioSource _tickAudioSource;
 
         private AudioClip _tickAudioClip;
 
-        private const int AudioSourceLength = 10;
+        private const int AudioSourceLength = 5;
 
         protected override void Awake()
         {
             base.Awake();
+            
+            _tickAudioSource = gameObject.AddComponent<AudioSource>();
+            
+            _musicAudioSource ??= gameObject.AddComponent<AudioSource>();
 
-            _tickAudioSource = new AudioSource[AudioSourceLength];
+            _musicAudioSource.playOnAwake = false;
 
-            for (int i = 0; i < AudioSourceLength; i++)
-            {
-                _tickAudioSource[i] = gameObject.AddComponent<AudioSource>();
-            }
+            _musicAudioClip.LoadAudioData();
 
             _tickAudioClip ??= Resources.Load<AudioClip>("Audio/assist_tick");
-        }
 
+            _tickAudioClip.LoadAudioData();
+            
+            Sync.Instance.Init(_musicAudioSource, _musicAudioClip);
+        }
+        
         public void PlayTick()
         {
-            for (int i = 0; i < AudioSourceLength; i++)
-            {
-                if (_tickAudioSource[i].isPlaying) continue;
-                
-                _tickAudioSource[i].PlayOneShot(_tickAudioClip);
-            }
+            _tickAudioSource.PlayOneShot(_tickAudioClip);
         }
+
+        public void PlayMusic()
+        {
+            _musicAudioSource.clip = _musicAudioClip; 
+            
+            _musicAudioSource.Play();
+        }
+
     }
 }

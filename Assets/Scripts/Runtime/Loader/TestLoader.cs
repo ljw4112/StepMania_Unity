@@ -1,4 +1,5 @@
 ﻿using Runtime.Data;
+using Runtime.Metronome;
 using UnityEngine;
 using Utils;
 
@@ -10,11 +11,11 @@ namespace Runtime.Loader
         
         private void Start()
         {
-            Simfile file = FileLoader.FileLoad("Tsukitourou");
+            Simfile file = FileLoader.FileLoad("Jounetsu Fun Fanfare");
             
-            _maker.SetSimfile(file, Difficulty.Medium).InstantiateNote();
+            _maker.SetSimfile(file, Difficulty.Challenge).InstantiateNote();
             
-            //_maker.Move();
+            _maker.Move();
         }
     }
 }

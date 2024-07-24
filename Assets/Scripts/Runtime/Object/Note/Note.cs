@@ -12,6 +12,10 @@ namespace Runtime.Object.Note
         
         private Transform _judgeLine;
 
+        private bool _canPlayTickSound;
+
+        private bool _playTickSound;
+
         public Note SetJudgeLine(Transform judgeLine)
         {
             _judgeLine = judgeLine;
@@ -26,21 +30,35 @@ namespace Runtime.Object.Note
             return this;
         }
 
+        public Note SetTickSound(bool bTick)
+        {
+            _canPlayTickSound = bTick;
+            
+            return this;
+        }
+
         private void Start()
         {
+            if (!_canPlayTickSound) return;
+            
             var d = Disposable.CreateBuilder();
             
             Observable.EveryUpdate().Subscribe(_ =>
             {
+                if (_playTickSound) return;
+                
                 if (_judgeLine == null) return;
-
+            
                 float scrolledYPos = transform.position.y - NoteMaker.ScrollSpeed;
                 
-                if (Mathf.Abs(_judgeLine.position.y - scrolledYPos) > 0.16f) return;
+                if (Mathf.Abs(_judgeLine.position.y - scrolledYPos) > 0.5f) return;
                 
                 AudioManager.Instance.PlayTick();
-            }).AddTo(ref d);
 
+                _playTickSound = true;
+
+            }).AddTo(ref d);
+            
             d.RegisterTo(destroyCancellationToken);
         }
     }

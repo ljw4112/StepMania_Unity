@@ -16,8 +16,14 @@ namespace Utils
             string filePath = $"{Application.dataPath}/TestFiles/{src}/{src}.ssc";
 
             if (!File.Exists(filePath))
-                return null;
+            {
+                filePath = $"{Application.dataPath}/TestFiles/{src}/{src}.sm";
+            }
 
+            if (!File.Exists(filePath))
+            {
+                return null;
+            }
             string fileContent = File.ReadAllText(filePath);
             return CreateFile(fileContent);
         }
