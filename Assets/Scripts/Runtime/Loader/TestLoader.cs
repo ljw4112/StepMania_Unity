@@ -14,7 +14,7 @@ namespace Runtime.Loader
             
             _maker.SetSimfile(file, Difficulty.Medium).InstantiateNote();
             
-            _maker.Move();
+            //_maker.Move();
         }
     }
 }
