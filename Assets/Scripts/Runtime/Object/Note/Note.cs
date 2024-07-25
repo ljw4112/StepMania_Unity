@@ -1,6 +1,7 @@
 ﻿using System;
 using R3;
 using Runtime.Data;
+using Runtime.Game;
 using Runtime.Loader;
 using UnityEngine;
 
@@ -14,7 +15,7 @@ namespace Runtime.Object.Note
 
         private bool _canPlayTickSound;
 
-        private bool _playTickSound;
+        private bool _isCalculated;
 
         public Note SetJudgeLine(Transform judgeLine)
         {
@@ -39,23 +40,29 @@ namespace Runtime.Object.Note
 
         private void Start()
         {
-            if (!_canPlayTickSound) return;
+            //if (!_canPlayTickSound) return;
             
             var d = Disposable.CreateBuilder();
             
             Observable.EveryUpdate().Subscribe(_ =>
             {
-                if (_playTickSound) return;
+                if (_isCalculated) return;
                 
                 if (_judgeLine == null) return;
-            
-                //float scrolledYPos = transform.position.y - NoteMaker.ScrollSpeed;
-                
-                //if (Mathf.Abs(_judgeLine.position.y - scrolledYPos) > 0.5f) return;
-                
-                //AudioManager.Instance.PlayTick();
 
-                _playTickSound = true;
+                float currentYPos = transform.position.y - GamePlay.ScrollSpeed;
+                
+                float distance = Mathf.Abs(_judgeLine.position.y - currentYPos);
+                
+                // 0.3까지는 처리안함
+                if (distance > 0.3) return;
+
+                if (distance < 0.16f)
+                {
+                    GamePlay._combo.Value += 1;
+                    
+                    _isCalculated = true;
+                }
 
             }).AddTo(ref d);
             

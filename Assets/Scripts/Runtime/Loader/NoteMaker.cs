@@ -2,6 +2,7 @@
 using System.Globalization;
 using System.Linq;
 using Runtime.Data;
+using Runtime.Game;
 using Runtime.Object.Note;
 using UnityEditor;
 using UnityEngine;
@@ -23,7 +24,7 @@ namespace Runtime.Loader
 
         private List<GameObject> _noteList = new();
 
-        private float _speed = 25;
+        private float _speed = 30;
 
         public float ScrollSpeed { get; private set; }
         
@@ -34,8 +35,6 @@ namespace Runtime.Loader
         private float _lineDistance;
 
         private (float?, float?) _lineCompare;
-
-        [SerializeField] private double _timer;
 
         private bool _bStart;
 
@@ -73,6 +72,8 @@ namespace Runtime.Loader
                 {
                     if (beatCount % i == 0 && i != 6) beatContains.Add(i);
                 }
+                
+                if (beatContains.Count <= 0) beatContains.Add(4);
 
                 for (int i = 0; i < beatCount; i++)
                 {
@@ -109,11 +110,13 @@ namespace Runtime.Loader
                                 Vector3 start = new Vector3(0, 0, 0);
                                 Vector3 end = new Vector3(0, (yPos - data.yPos) * _speed, 0);
 
-                                var longObj = Instantiate(longNotePrefab, new Vector3(noteXPos[j], data.yPos * _speed, 0), Quaternion.identity, trNoteParent);
+                                var longObj = Instantiate(longNotePrefab, trNoteParent);
+
+                                longObj.transform.localPosition = new Vector3(noteXPos[j], data.yPos * _speed, 0);
                                 
                                 if (longObj.TryGetComponent<LongNote>(out var longNote))
                                 {
-                                    longNote.SetPosition(start, end);
+                                    longNote.SetPosition(trJudgeLine, start, end);
                                 }
                             }
 
@@ -126,7 +129,9 @@ namespace Runtime.Loader
                         //=== 오브젝트 생성
                         var obj = Resources.Load<GameObject>("Prefab/Note");
 
-                        var cubeObj = Instantiate(obj, position, Quaternion.identity, trNoteParent);
+                        var cubeObj = Instantiate(obj, trNoteParent);
+
+                        cubeObj.transform.localPosition = position;
 
                         if (cubeObj.TryGetComponent<Note>(out var note))
                         {
@@ -163,7 +168,7 @@ namespace Runtime.Loader
                 else if (measure.Key == 1 && _lineCompare.Item2 == null) _lineCompare.Item2 = lineY;
 
                 // 위에서 계산된 좌표 삽입
-                lineObj.transform.position = new Vector3(0, lineY, 0);
+                lineObj.transform.localPosition = new Vector3(trJudgeLine.position.x, lineY, 0);
             }
 
             // 마디선과 마디선 사이의 간격

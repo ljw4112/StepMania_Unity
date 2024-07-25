@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using Cysharp.Threading.Tasks;
 using R3;
 using Runtime.Data;
@@ -10,18 +11,26 @@ namespace Runtime.Game
 {
     public class GamePlay : MonoBehaviour
     {
+        public static float ScrollSpeed;
+
+        private const int OffsetHeight = 4;
+
+        [SerializeField] private UI.UIRoot UiRoot;
+        
         [SerializeField] private NoteMaker _noteMaker;
         
         [SerializeField] private Transform noteParent;
 
         private Simfile _simfile;
 
-        private double _timer;
+        private ReactiveProperty<double> _timer = new();
+
+        public static readonly ReactiveProperty<int> _combo = new();
+        
+        public static Simfile CurrentSimfile { get; private set; }
 
         private void Start()
         {
-            
-            
             var d = Disposable.CreateBuilder();
             
             Observable.EveryUpdate().Where(_ => Input.GetKeyDown(KeyCode.F5))
@@ -31,16 +40,34 @@ namespace Runtime.Game
                 }).AddTo(ref d);
             
             d.RegisterTo(destroyCancellationToken);;
+
+            _combo.Where(x => x > 0).Subscribe(x =>
+            {
+                UiRoot.textCombo.SetText(x.ToString());
+            });
+
+            _timer.Subscribe(time =>
+            {
+                UiRoot.textTimer.SetText(time.ToString("F3"));
+            });
         }
 
         private void StartSong()
         {
             // 임시로
-            _simfile = FileLoader.FileLoad("Jounetsu Fun Fanfare");
+            CurrentSimfile = FileLoader.FileLoad("Jounetsu Fun Fanfare");
 
-            _noteMaker.SetSimfile(_simfile, Difficulty.Challenge).InstantiateNote();
+            noteParent.transform.position = new Vector3(0, OffsetHeight, 0);
+            
+            UiRoot.textTitle.SetText(CurrentSimfile.TitleTranslit);
+            
+            UiRoot.textArtist.SetText(CurrentSimfile.ArtistTranslit);
 
-            _timer = _simfile.Offset;
+            _noteMaker.SetSimfile(CurrentSimfile, Difficulty.Challenge).InstantiateNote();
+
+            _timer.Value = CurrentSimfile.Offset - OffsetHeight;
+            
+            ScrollSpeed = -_noteMaker.ScrollSpeed * Time.deltaTime;
             
             Play().Forget();
         }
@@ -51,17 +78,17 @@ namespace Runtime.Game
             
             while (true)
             {
-                if (_timer >= 0 && !AudioManager.Instance.IsPlayingMusic)
+                if (_timer.Value >= 0 && !AudioManager.Instance.IsPlayingMusic)
                 {
                     AudioManager.Instance.PlayMusic();
                 }
             
-                if (_timer >= -_simfile.Offset)
+                if (_timer.Value >= -CurrentSimfile.Offset)
                 {
                     noteParent.Translate(0, -_noteMaker.ScrollSpeed * Time.deltaTime, 0);
                 }
 
-                _timer += Time.deltaTime;
+                _timer.Value += Time.deltaTime;
                 
                 await UniTask.Yield();
             }
