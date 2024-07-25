@@ -49,11 +49,11 @@ namespace Runtime.Object.Note
                 
                 if (_judgeLine == null) return;
             
-                float scrolledYPos = transform.position.y - NoteMaker.ScrollSpeed;
+                //float scrolledYPos = transform.position.y - NoteMaker.ScrollSpeed;
                 
-                if (Mathf.Abs(_judgeLine.position.y - scrolledYPos) > 0.5f) return;
+                //if (Mathf.Abs(_judgeLine.position.y - scrolledYPos) > 0.5f) return;
                 
-                AudioManager.Instance.PlayTick();
+                //AudioManager.Instance.PlayTick();
 
                 _playTickSound = true;
 

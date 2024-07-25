@@ -11,10 +11,6 @@ namespace Runtime.Loader
 {
     public class NoteMaker : MonoBehaviour
     {
-        [SerializeField] private Text _text;
-        
-        public static float ScrollSpeed;
-
         private Simfile _simfile;
 
         private Difficulty _difficulty;
@@ -29,9 +25,9 @@ namespace Runtime.Loader
 
         private float _speed = 25;
 
-        private float _scrollSpeed;
-
-        private const float _offsetY = 3;
+        public float ScrollSpeed { get; private set; }
+        
+        public bool IsNoteCreated { get; private set; }
 
         private float _bpmRatio;
 
@@ -42,6 +38,8 @@ namespace Runtime.Loader
         [SerializeField] private double _timer;
 
         private bool _bStart;
+
+        private List<(int line, float yPos)> _longNoteStack = new();
 
         public NoteMaker SetSimfile(Simfile simfile, Difficulty difficulty)
         {
@@ -57,6 +55,8 @@ namespace Runtime.Loader
         public void InstantiateNote()
         {
             _noteList.Clear();
+            
+            _longNoteStack.Clear();
 
             if (_simfile == null) return;
 
@@ -65,7 +65,6 @@ namespace Runtime.Loader
                 int beatCount = measure.Value.Count;
 
                 // beatCount : 이 마디에 최소 박자단위가 몇인지 (ex. 4 => 4박만으로 이루어져있다)
-                // _bpmRatio : 60기준을 1로 했을 때 bpm 비율, 60보다 빨라질수록 해당값은 작아진다.
                 // minYSpace : 이 마디안에서 노트 하나와 하나 사이의 간격
                 float minYSpace = 1f / beatCount;
 
@@ -88,11 +87,38 @@ namespace Runtime.Loader
 
                     for (int j = 0; j < 5; j++)
                     {
-                        // 일단 기본노트(1)이 아니면 넘어감
-                        if (line[j] - '0' != 1) continue;
-
+                        if (line[j] - '0' == 0) continue;
+                        
                         // 현재 노트의 좌표 계산
-                        float yPos = (measure.Key + minYSpace * i);
+                        float yPos = measure.Key + minYSpace * i;
+                        
+                        if (line[j] - '0' == 2)
+                        {
+                            _longNoteStack.Add((j, yPos));
+                            continue;
+                        }
+                        
+                        if (line[j] - '0' == 3)
+                        {
+                            var data = _longNoteStack.Find(x => x.line == j);
+                            if (!data.Equals(default))
+                            {
+                                _longNoteStack.Remove(data);
+                                var longNotePrefab = Resources.Load<GameObject>("Prefab/LongNote");
+                                
+                                Vector3 start = new Vector3(0, 0, 0);
+                                Vector3 end = new Vector3(0, (yPos - data.yPos) * _speed, 0);
+
+                                var longObj = Instantiate(longNotePrefab, new Vector3(noteXPos[j], data.yPos * _speed, 0), Quaternion.identity, trNoteParent);
+                                
+                                if (longObj.TryGetComponent<LongNote>(out var longNote))
+                                {
+                                    longNote.SetPosition(start, end);
+                                }
+                            }
+
+                            continue;
+                        }
 
                         // 좌표를 Vector3로 저장, 저장할 때는 현재 배속을 곱해줘서 노트 사이의 간격을 조절
                         Vector3 position = new Vector3(noteXPos[j], yPos * _speed, 0);
@@ -143,39 +169,9 @@ namespace Runtime.Loader
             // 마디선과 마디선 사이의 간격
             _lineDistance = _lineCompare.Item2.Value - _lineCompare.Item1.Value;
             
-            _scrollSpeed = _lineDistance / (_bpmRatio * 4);
-        }
+            ScrollSpeed = _lineDistance / (_bpmRatio * 4);
 
-        private bool bUpdate;
-
-        public void Move()
-        {
-            bUpdate = true;
-            
-            _timer = _simfile.Offset;
-        }
-        
-        private void Update()
-        {
-            if (!bUpdate) return;
-
-            if (_timer >= 0 && !_bStart)
-            {
-                AudioManager.Instance.PlayMusic();
-                
-                _bStart = true;
-            }
-            
-            if (_timer >= -_simfile.Offset)
-            {
-                trNoteParent.Translate(0, -_scrollSpeed * Time.deltaTime, 0);
-
-                ScrollSpeed = -_scrollSpeed * Time.deltaTime;
-            }
-
-            _timer += Time.deltaTime;
-
-            _text.text = _timer.ToString(CultureInfo.InvariantCulture);
+            IsNoteCreated = true;
         }
 
         private Color CheckCurLineColor(IEnumerable<int> beats, int line)

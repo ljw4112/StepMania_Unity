@@ -13,7 +13,7 @@ namespace Runtime.Data
 
         private AudioClip _tickAudioClip;
 
-        private const int AudioSourceLength = 5;
+        public bool IsPlayingMusic;
 
         protected override void Awake()
         {
@@ -30,8 +30,6 @@ namespace Runtime.Data
             _tickAudioClip ??= Resources.Load<AudioClip>("Audio/assist_tick");
 
             _tickAudioClip.LoadAudioData();
-            
-            Sync.Instance.Init(_musicAudioSource, _musicAudioClip);
         }
         
         public void PlayTick()
@@ -41,9 +39,13 @@ namespace Runtime.Data
 
         public void PlayMusic()
         {
+            if (_musicAudioClip == null || _musicAudioSource == null) return;
+            
             _musicAudioSource.clip = _musicAudioClip; 
             
             _musicAudioSource.Play();
+
+            IsPlayingMusic = true;
         }
 
     }
