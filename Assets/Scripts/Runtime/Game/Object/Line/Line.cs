@@ -5,6 +5,8 @@ namespace Runtime.Object.Line
 {
     public class Line : MonoBehaviour
     {
+        [SerializeField] private Transform trJudgeLine;
+        
         [SerializeField] private TextMeshPro _lineNum;
 
         [SerializeField] private TextMeshPro _lineSeconds;

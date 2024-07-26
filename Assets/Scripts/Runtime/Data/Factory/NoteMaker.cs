@@ -51,7 +51,7 @@ namespace Runtime.Data.Factory
 
             foreach (var measure in _simfile.NoteDatas[_difficulty].NoteInMeasure)
             {
-                _bpmRatio = 60 / _simfile.BPM[measure.Key];
+                _bpmRatio = _simfile.BPM.TryGetValue(measure.Key, out var value) ? 60 / value : _bpmRatio;
                 
                 int beatCount = measure.Value.Count;
 

@@ -31,12 +31,12 @@ namespace Runtime.Data
         public double SampleStart { get; set; }
         public double SampleLength { get; set; }
         public string Selectable { get; set; }
-        public string Bpm { get; set; }
+        public string Bpms { get; set; }
         public string Stop { get; set; }
         public string Bgchanges { get; set; }
         public string KeySound { get; set; }
 
-        public Dictionary<double, float> BPM { get; } = new();
+        public SortedDictionary<double, float> BPM { get; } = new();
 
         public Dictionary<Difficulty, NoteData> NoteDatas { get; } = new();
         public Dictionary<Difficulty, int> Difficulty { get; } = new();
@@ -68,7 +68,7 @@ namespace Runtime.Data
 
         public Simfile ConvertData()
         {
-            var bpmDatas = Bpm.Split('=');
+            var bpmDatas = Bpms.Split('=');
             BPM.Add(double.Parse(bpmDatas[0]), float.Parse(bpmDatas[1]));
             
             return this;
