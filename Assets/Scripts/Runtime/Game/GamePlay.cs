@@ -1,9 +1,7 @@
-using System;
-using System.Globalization;
 using Cysharp.Threading.Tasks;
 using R3;
 using Runtime.Data;
-using Runtime.Loader;
+using Runtime.Data.Factory;
 using UnityEngine;
 using Utils;
 
@@ -13,7 +11,7 @@ namespace Runtime.Game
     {
         public static float ScrollSpeed;
 
-        private const int OffsetHeight = 4;
+        public const int OffsetHeight = 4;
 
         [SerializeField] private UI.UIRoot UiRoot;
         
@@ -33,8 +31,7 @@ namespace Runtime.Game
         {
             var d = Disposable.CreateBuilder();
             
-            Observable.EveryUpdate().Where(_ => Input.GetKeyDown(KeyCode.F5))
-                .ThrottleFirst(TimeSpan.FromSeconds(5)).Subscribe(_ =>
+            Observable.EveryUpdate().Where(_ => Input.GetKeyDown(KeyCode.F5)).Subscribe(_ =>
                 {
                     StartSong();
                 }).AddTo(ref d);
@@ -54,6 +51,8 @@ namespace Runtime.Game
 
         private void StartSong()
         {
+            _combo.Value = 0;
+            
             // 임시로
             CurrentSimfile = FileLoader.FileLoad("Jounetsu Fun Fanfare");
 

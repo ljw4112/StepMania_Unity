@@ -1,4 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 
 namespace Runtime.Data
 {
@@ -33,12 +36,42 @@ namespace Runtime.Data
         public string Bgchanges { get; set; }
         public string KeySound { get; set; }
 
-        public readonly Dictionary<Difficulty, NoteData> NoteDatas = new();
-        public readonly Dictionary<Difficulty, int> Difficulty = new();
-    }
+        public Dictionary<double, float> BPM { get; } = new();
 
-    public class NoteData
-    {
-        public readonly Dictionary<int, List<string>> NoteInMeasure = new();
+        public Dictionary<Difficulty, NoteData> NoteDatas { get; } = new();
+        public Dictionary<Difficulty, int> Difficulty { get; } = new();
+        
+        public class NoteData
+        {
+            public readonly Dictionary<int, List<string>> NoteInMeasure = new();
+        }
+
+        public override int GetHashCode()
+        {
+            Type type = this.GetType();
+            PropertyInfo[] properties = type.GetProperties(BindingFlags.Instance | BindingFlags.Public)
+                .Where(p => p.PropertyType != typeof(Dictionary<Difficulty, NoteData>) && 
+                            p.PropertyType != typeof(Dictionary<Difficulty, int>))
+                .ToArray();
+
+            int hash = properties.Select(property => property.GetValue(this))
+                .Aggregate(17, (current, value) => current * 23 + (value != null ? value.GetHashCode() : 0));
+
+            foreach (var kvp in BPM)
+            {
+                hash = hash * 23 + kvp.Key.GetHashCode();
+                hash = hash * 23 + kvp.Value.GetHashCode();
+            }
+        
+            return hash;
+        }
+
+        public Simfile ConvertData()
+        {
+            var bpmDatas = Bpm.Split('=');
+            BPM.Add(double.Parse(bpmDatas[0]), float.Parse(bpmDatas[1]));
+            
+            return this;
+        }
     }
 }

@@ -25,7 +25,8 @@ namespace Utils
                 return null;
             }
             string fileContent = File.ReadAllText(filePath);
-            return CreateFile(fileContent);
+
+            return CreateFile(fileContent)?.ConvertData();
         }
 
         private static Simfile CreateFile(string text)
@@ -122,7 +123,7 @@ namespace Utils
                     index++;
                 }
 
-                noteData[difficulty] = new NoteData();
+                noteData[difficulty] = new Simfile.NoteData();
                 int measure = 0;
 
                 while (index < lines.Count)

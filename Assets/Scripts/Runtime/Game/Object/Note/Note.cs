@@ -1,8 +1,5 @@
-﻿using System;
-using R3;
-using Runtime.Data;
+﻿using R3;
 using Runtime.Game;
-using Runtime.Loader;
 using UnityEngine;
 
 namespace Runtime.Object.Note

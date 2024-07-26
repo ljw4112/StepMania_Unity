@@ -1,14 +1,9 @@
 ﻿using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
-using Runtime.Data;
-using Runtime.Game;
 using Runtime.Object.Note;
-using UnityEditor;
 using UnityEngine;
-using UnityEngine.UI;
 
-namespace Runtime.Loader
+namespace Runtime.Data.Factory
 {
     public class NoteMaker : MonoBehaviour
     {
@@ -22,14 +17,13 @@ namespace Runtime.Loader
 
         [SerializeField] private Transform trJudgeLine;
 
-        private List<GameObject> _noteList = new();
-
         private float _speed = 30;
 
         public float ScrollSpeed { get; private set; }
         
         public bool IsNoteCreated { get; private set; }
 
+        // 4분음표 사이의 간격 (1초 : 60bpm기준)
         private float _bpmRatio;
 
         private float _lineDistance;
@@ -46,21 +40,19 @@ namespace Runtime.Loader
 
             _difficulty = difficulty;
 
-            _bpmRatio = 60 / 180f;
-
             return this;
         }
 
         public void InstantiateNote()
         {
-            _noteList.Clear();
-            
             _longNoteStack.Clear();
 
             if (_simfile == null) return;
 
             foreach (var measure in _simfile.NoteDatas[_difficulty].NoteInMeasure)
             {
+                _bpmRatio = 60 / _simfile.BPM[measure.Key];
+                
                 int beatCount = measure.Value.Count;
 
                 // beatCount : 이 마디에 최소 박자단위가 몇인지 (ex. 4 => 4박만으로 이루어져있다)
@@ -129,11 +121,11 @@ namespace Runtime.Loader
                         //=== 오브젝트 생성
                         var obj = Resources.Load<GameObject>("Prefab/Note");
 
-                        var cubeObj = Instantiate(obj, trNoteParent);
+                        var noteObj = Instantiate(obj, trNoteParent);
 
-                        cubeObj.transform.localPosition = position;
+                        noteObj.transform.localPosition = position;
 
-                        if (cubeObj.TryGetComponent<Note>(out var note))
+                        if (noteObj.TryGetComponent<Note>(out var note))
                         {
                             note.SetJudgeLine(trJudgeLine);
 
@@ -144,7 +136,6 @@ namespace Runtime.Loader
 
                         note.gameObject.name = $"Note_{measure.Key}_{i}";
 
-                        _noteList.Add(cubeObj);
                         //=== 오브젝트 생성 끝
 
                         // 같은 라인의 노트는 한 노트만 Tick을 재생하도록
@@ -158,14 +149,25 @@ namespace Runtime.Loader
                 if (lineObj.transform.TryGetComponent<Object.Line.Line>(out var lineComponent))
                 {
                     lineComponent.SetLineNum(measure.Key);
+                    
+                    // 마디선 실제 시간 계산
+                    lineComponent.SetLineSeconds(-_simfile.Offset + _bpmRatio * 4 * measure.Key);
                 }
 
                 // 마디선의 Y좌표 계산, 마디선은 해당 마디의 첫번째 노트와 좌표가 똑같아야 된다.
                 float lineY = measure.Key * _speed;
+                
 
-                // 좌표 사이의 거리를 계산해서 60bpm일 때 1을 기준으로 속도를 계산하기 위해 데이터 저장
-                if (measure.Key == 0 && _lineCompare.Item1 == null) _lineCompare.Item1 = lineY;
-                else if (measure.Key == 1 && _lineCompare.Item2 == null) _lineCompare.Item2 = lineY;
+                switch (measure.Key)
+                {
+                    // 좌표 사이의 거리를 계산해서 60bpm일 때 1을 기준으로 속도를 계산하기 위해 데이터 저장
+                    case 0 when _lineCompare.Item1 == null:
+                        _lineCompare.Item1 = lineY;
+                        break;
+                    case 1 when _lineCompare.Item2 == null:
+                        _lineCompare.Item2 = lineY;
+                        break;
+                }
 
                 // 위에서 계산된 좌표 삽입
                 lineObj.transform.localPosition = new Vector3(trJudgeLine.position.x, lineY, 0);

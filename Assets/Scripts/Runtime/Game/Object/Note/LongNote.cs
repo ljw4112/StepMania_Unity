@@ -62,8 +62,6 @@ namespace Runtime.Object.Note
 
                 if (Math.Abs(startYPos - trJudgeLine.transform.position.y) < 0.16f && !_longNoteStart)
                 {
-                    Debug.Log("LongNote-Start");
-                    
                     _bStartCalculate = true;
 
                     _token = new CancellationTokenSource();
@@ -75,8 +73,6 @@ namespace Runtime.Object.Note
 
                 if (Math.Abs(endYPos - trJudgeLine.transform.position.y) < 0.16f && !_longNoteEnd)
                 {
-                    Debug.Log("LongNote-End");
-                    
                     _bStartCalculate = false;
                     
                     _token.Cancel();
@@ -97,8 +93,6 @@ namespace Runtime.Object.Note
                 {
                     GamePlay._combo.Value += 1;
                     
-                    Debug.Log("Added Longnote combo");
-
                     await UniTask.WaitForSeconds(_longNoteComboInterval, cancellationToken: _token.Token);
                 }
             }
