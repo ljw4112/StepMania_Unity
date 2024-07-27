@@ -75,7 +75,7 @@ namespace Runtime.Object.Note
                 {
                     _bStartCalculate = false;
                     
-                    _token.Cancel();
+                    _token?.Cancel();
 
                     _longNoteEnd = true;
                 }

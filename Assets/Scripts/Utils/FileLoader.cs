@@ -2,7 +2,9 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
+using System.Text;
 using Runtime.Data;
+using UnityEditor.ShaderGraph.Drawing.Inspector.PropertyDrawers;
 using UnityEngine;
 
 namespace Utils
@@ -13,11 +15,13 @@ namespace Utils
 
         public static Simfile FileLoad(string src)
         {
-            string filePath = $"{Application.dataPath}/TestFiles/{src}/{src}.ssc";
+            string folderPath = $"{Application.dataPath}/TestFiles/{src}";
+            
+            string filePath = $"{folderPath}/{src}.ssc";
 
             if (!File.Exists(filePath))
             {
-                filePath = $"{Application.dataPath}/TestFiles/{src}/{src}.sm";
+                filePath = $"{folderPath}/{src}.sm";
             }
 
             if (!File.Exists(filePath))
@@ -26,7 +30,7 @@ namespace Utils
             }
             string fileContent = File.ReadAllText(filePath);
 
-            return CreateFile(fileContent)?.ConvertData();
+            return CreateFile(fileContent)?.LoadMusic(folderPath + "/");
         }
 
         private static Simfile CreateFile(string text)
@@ -100,6 +104,34 @@ namespace Utils
                         break;
                     }
 
+                    if (line.StartsWith("#BPMS:"))
+                    {
+                        StringBuilder bpmBuilder = new();
+                        
+                        string firstLine = line;
+                        
+                        firstLine = firstLine["#BPMS:".Length..];
+                        
+                        bpmBuilder.Append(firstLine);
+
+                        index++;
+
+                        while (lines[index] != ";")
+                        {
+                            string bpmElement = lines[index];
+                            
+                            bpmBuilder.Append(bpmElement);
+
+                            index++;
+                        }
+
+                        simfile.Bpms = bpmBuilder.ToString();
+                        
+                        index++;
+                        
+                        continue;
+                    }
+
                     if (line.Length > 1)
                     {
                         var subString = line[1..^1].Split(':');
@@ -115,6 +147,9 @@ namespace Utils
                                     break;
                                 case "METER":
                                     simfile.Difficulty[difficulty] = int.Parse(value);
+                                    break;
+                                case "OFFSET":
+                                    simfile.Offset = double.Parse(value);
                                     break;
                             }
                         }

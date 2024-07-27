@@ -8,6 +8,7 @@ namespace UI
         [Header("Combo / Timer")]
         public TextMeshProUGUI textCombo;
         public TextMeshProUGUI textTimer;
+        public TextMeshProUGUI textBpm;
 
         [Header("Song Information")] 
         public TextMeshProUGUI textTitle;

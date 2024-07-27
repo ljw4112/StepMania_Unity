@@ -19,7 +19,16 @@ namespace Runtime.Data.Factory
 
         private float _speed = 30;
 
-        public float ScrollSpeed { get; private set; }
+        /// <summary>
+        /// 1마디 움직이는 속도 (두 마디 사이의 거리 / 4분음표 4개 지나가는 시간 ( 60 / bpm * 4 )
+        /// </summary>
+
+        private float _scrollSpeed;
+        
+        public float GetScrollSpeed(float bpm)
+        {
+            return _lineDistance / (60 / bpm * 4);
+        }
         
         public bool IsNoteCreated { get; private set; }
 
@@ -33,7 +42,7 @@ namespace Runtime.Data.Factory
         private bool _bStart;
 
         private List<(int line, float yPos)> _longNoteStack = new();
-
+        
         public NoteMaker SetSimfile(Simfile simfile, Difficulty difficulty)
         {
             _simfile = simfile;
@@ -51,7 +60,7 @@ namespace Runtime.Data.Factory
 
             foreach (var measure in _simfile.NoteDatas[_difficulty].NoteInMeasure)
             {
-                _bpmRatio = _simfile.BPM.TryGetValue(measure.Key, out var value) ? 60 / value : _bpmRatio;
+                //_bpmRatio = 60 / 259f;
                 
                 int beatCount = measure.Value.Count;
 
@@ -80,7 +89,7 @@ namespace Runtime.Data.Factory
 
                     for (int j = 0; j < 5; j++)
                     {
-                        if (line[j] - '0' == 0) continue;
+                        if (line[j] - '0' == 0 || line[j] == 'M') continue;
                         
                         // 현재 노트의 좌표 계산
                         float yPos = measure.Key + minYSpace * i;
@@ -146,13 +155,15 @@ namespace Runtime.Data.Factory
                 // 마디선 생성
                 var lineObj = Instantiate(Resources.Load<GameObject>("Prefab/Line"), trNoteParent);
 
-                if (lineObj.transform.TryGetComponent<Object.Line.Line>(out var lineComponent))
-                {
-                    lineComponent.SetLineNum(measure.Key);
-                    
-                    // 마디선 실제 시간 계산
-                    lineComponent.SetLineSeconds(-_simfile.Offset + _bpmRatio * 4 * measure.Key);
-                }
+                // if (lineObj.transform.TryGetComponent<Object.Line.Line>(out var lineComponent))
+                // {
+                //     lineComponent.SetLineNum(measure.Key);
+                //     
+                //     // 마디선 실제 시간 계산
+                //     double realTime = -_simfile.Offset + _bpmRatio * 4 * measure.Key;
+                //     
+                //     lineComponent.SetLineSeconds(realTime);
+                // }
 
                 // 마디선의 Y좌표 계산, 마디선은 해당 마디의 첫번째 노트와 좌표가 똑같아야 된다.
                 float lineY = measure.Key * _speed;
@@ -176,8 +187,6 @@ namespace Runtime.Data.Factory
             // 마디선과 마디선 사이의 간격
             _lineDistance = _lineCompare.Item2.Value - _lineCompare.Item1.Value;
             
-            ScrollSpeed = _lineDistance / (_bpmRatio * 4);
-
             IsNoteCreated = true;
         }
 

@@ -1,7 +1,9 @@
+using System;
 using Cysharp.Threading.Tasks;
 using R3;
 using Runtime.Data;
 using Runtime.Data.Factory;
+using Runtime.Game.Input;
 using UnityEngine;
 using Utils;
 
@@ -24,20 +26,15 @@ namespace Runtime.Game
         private ReactiveProperty<double> _timer = new();
 
         public static readonly ReactiveProperty<int> _combo = new();
-        
-        public static Simfile CurrentSimfile { get; private set; }
+
+        private Simfile _curSimfile;
+
+        private ReactiveProperty<float> _curBpm = new();
 
         private void Start()
         {
-            var d = Disposable.CreateBuilder();
+            Application.targetFrameRate = 144;
             
-            Observable.EveryUpdate().Where(_ => Input.GetKeyDown(KeyCode.F5)).Subscribe(_ =>
-                {
-                    StartSong();
-                }).AddTo(ref d);
-            
-            d.RegisterTo(destroyCancellationToken);;
-
             _combo.Where(x => x > 0).Subscribe(x =>
             {
                 UiRoot.textCombo.SetText(x.ToString());
@@ -47,6 +44,13 @@ namespace Runtime.Game
             {
                 UiRoot.textTimer.SetText(time.ToString("F3"));
             });
+
+            _curBpm.Subscribe(bpm =>
+            {
+                UiRoot.textBpm.SetText(bpm.ToString());
+            });
+
+            InputSystem.Instance.SetInputAction(KeyCode.F5, StartSong);
         }
 
         private void StartSong()
@@ -54,37 +58,56 @@ namespace Runtime.Game
             _combo.Value = 0;
             
             // 임시로
-            CurrentSimfile = FileLoader.FileLoad("Jounetsu Fun Fanfare");
+            _curSimfile = FileLoader.FileLoad("Shugoku no Medley Chozetsugikou BosoKumiKyoku");
 
             noteParent.transform.position = new Vector3(0, OffsetHeight, 0);
             
-            UiRoot.textTitle.SetText(CurrentSimfile.TitleTranslit);
+            UiRoot.textTitle.SetText(_curSimfile.Title);
             
-            UiRoot.textArtist.SetText(CurrentSimfile.ArtistTranslit);
+            UiRoot.textArtist.SetText(_curSimfile.Artist);
 
-            _noteMaker.SetSimfile(CurrentSimfile, Difficulty.Challenge).InstantiateNote();
+            _noteMaker.SetSimfile(_curSimfile, Difficulty.Challenge).InstantiateNote();
 
-            _timer.Value = CurrentSimfile.Offset - OffsetHeight;
+            _curSimfile.ConvertData();
+
+            _timer.Value = _curSimfile.Offset - OffsetHeight;
             
-            ScrollSpeed = -_noteMaker.ScrollSpeed * Time.deltaTime;
+            ScrollSpeed = -_noteMaker.GetScrollSpeed(0) * Time.deltaTime;
+
+            AudioManager.Instance.SetMusic(_curSimfile.MusicAudioClip);
             
             Play().Forget();
         }
         
         private async UniTaskVoid Play()
         {
-            await UniTask.WaitUntil(() => _noteMaker.IsNoteCreated);
-            
+            // 노트가 다 만들어지고 Audio파일이 모두 로딩될 때 까지 대기
+            await UniTask.WaitUntil(() => _noteMaker.IsNoteCreated && AudioManager.Instance.LoadAudio());
+
+            _curBpm.Value = _curSimfile.BPM.Dequeue().bpm;
+
             while (true)
             {
                 if (_timer.Value >= 0 && !AudioManager.Instance.IsPlayingMusic)
                 {
                     AudioManager.Instance.PlayMusic();
                 }
-            
-                if (_timer.Value >= -CurrentSimfile.Offset)
+
+                if (_curSimfile.BPM.Count > 0)
                 {
-                    noteParent.Translate(0, -_noteMaker.ScrollSpeed * Time.deltaTime, 0);
+                    int time = _curSimfile.BPM.Peek().seconds;
+
+                    int integerTimer = (int)(_timer.Value * 1000);
+                
+                    if (Math.Abs(integerTimer - time) < 5)
+                    {
+                        _curBpm.Value = _curSimfile.BPM.Dequeue().bpm;
+                    }
+                }
+            
+                if (_timer.Value >= - _curSimfile.Offset - OffsetHeight * Time.deltaTime)
+                {
+                    noteParent.Translate(0, -_noteMaker.GetScrollSpeed(_curBpm.Value) * Time.deltaTime, 0);
                 }
 
                 _timer.Value += Time.deltaTime;
