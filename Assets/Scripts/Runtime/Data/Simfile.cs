@@ -12,7 +12,8 @@ namespace Runtime.Data
     {
         None,
         Medium,
-        Challenge
+        Challenge,
+        Edit,
     }
     
     public class Simfile

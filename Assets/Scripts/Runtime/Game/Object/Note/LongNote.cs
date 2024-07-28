@@ -21,7 +21,7 @@ namespace Runtime.Object.Note
 
         private bool _bStartCalculate;
 
-        private float _longNoteComboInterval;
+        private ReactiveProperty<float> _longNoteComboInterval = new();
 
         private CancellationTokenSource _token;
 
@@ -43,7 +43,10 @@ namespace Runtime.Object.Note
 
             trEnd.transform.localPosition = _end;
 
-            _longNoteComboInterval = 60 / 180f / 4;
+            GamePlay.CurrentBpm.Subscribe(bpm =>
+            {
+                _longNoteComboInterval.Value = 60 / GamePlay.CurrentBpm.Value / 4;
+            });
 
             return this;
         }
@@ -74,6 +77,8 @@ namespace Runtime.Object.Note
                 if (Math.Abs(endYPos - trJudgeLine.transform.position.y) < 0.16f && !_longNoteEnd)
                 {
                     _bStartCalculate = false;
+
+                    _token ??= new CancellationTokenSource();
                     
                     _token?.Cancel();
 
@@ -93,7 +98,7 @@ namespace Runtime.Object.Note
                 {
                     GamePlay._combo.Value += 1;
                     
-                    await UniTask.WaitForSeconds(_longNoteComboInterval, cancellationToken: _token.Token);
+                    await UniTask.WaitForSeconds(_longNoteComboInterval.Value, cancellationToken: _token.Token);
                 }
             }
             catch (OperationCanceledException) { }

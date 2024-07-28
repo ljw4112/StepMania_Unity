@@ -60,8 +60,6 @@ namespace Runtime.Data.Factory
 
             foreach (var measure in _simfile.NoteDatas[_difficulty].NoteInMeasure)
             {
-                //_bpmRatio = 60 / 259f;
-                
                 int beatCount = measure.Value.Count;
 
                 // beatCount : 이 마디에 최소 박자단위가 몇인지 (ex. 4 => 4박만으로 이루어져있다)

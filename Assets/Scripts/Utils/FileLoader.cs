@@ -100,7 +100,8 @@ namespace Utils
                     var line = lines[index].Trim();
                     if (line.Equals("#NOTES:"))
                     {
-                        index += 2;
+                        if (lines[index + 1].Contains("//")) index += 2;
+                        else index++;
                         break;
                     }
 

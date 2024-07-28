@@ -29,11 +29,13 @@ namespace Runtime.Game
 
         private Simfile _curSimfile;
 
-        private ReactiveProperty<float> _curBpm = new();
+        public static readonly ReactiveProperty<float> CurrentBpm = new();
 
         private void Start()
         {
             Application.targetFrameRate = 144;
+            
+            QualitySettings.vSyncCount = 0;
             
             _combo.Where(x => x > 0).Subscribe(x =>
             {
@@ -45,7 +47,7 @@ namespace Runtime.Game
                 UiRoot.textTimer.SetText(time.ToString("F3"));
             });
 
-            _curBpm.Subscribe(bpm =>
+            CurrentBpm.Subscribe(bpm =>
             {
                 UiRoot.textBpm.SetText(bpm.ToString());
             });
@@ -58,7 +60,7 @@ namespace Runtime.Game
             _combo.Value = 0;
             
             // 임시로
-            _curSimfile = FileLoader.FileLoad("Shugoku no Medley Chozetsugikou BosoKumiKyoku");
+            _curSimfile = FileLoader.FileLoad("raputa");
 
             noteParent.transform.position = new Vector3(0, OffsetHeight, 0);
             
@@ -66,7 +68,7 @@ namespace Runtime.Game
             
             UiRoot.textArtist.SetText(_curSimfile.Artist);
 
-            _noteMaker.SetSimfile(_curSimfile, Difficulty.Challenge).InstantiateNote();
+            _noteMaker.SetSimfile(_curSimfile, Difficulty.Edit).InstantiateNote();
 
             _curSimfile.ConvertData();
 
@@ -84,7 +86,7 @@ namespace Runtime.Game
             // 노트가 다 만들어지고 Audio파일이 모두 로딩될 때 까지 대기
             await UniTask.WaitUntil(() => _noteMaker.IsNoteCreated && AudioManager.Instance.LoadAudio());
 
-            _curBpm.Value = _curSimfile.BPM.Dequeue().bpm;
+            CurrentBpm.Value = _curSimfile.BPM.Dequeue().bpm;
 
             while (true)
             {
@@ -93,7 +95,7 @@ namespace Runtime.Game
                     AudioManager.Instance.PlayMusic();
                 }
 
-                if (_curSimfile.BPM.Count > 0)
+                if (_curSimfile.BPM.Count > 1)
                 {
                     int time = _curSimfile.BPM.Peek().seconds;
 
@@ -101,18 +103,20 @@ namespace Runtime.Game
                 
                     if (Math.Abs(integerTimer - time) < 5)
                     {
-                        _curBpm.Value = _curSimfile.BPM.Dequeue().bpm;
+                        CurrentBpm.Value = _curSimfile.BPM.Dequeue().bpm;
                     }
                 }
             
-                if (_timer.Value >= - _curSimfile.Offset - OffsetHeight * Time.deltaTime)
+                float translateAmount = -_noteMaker.GetScrollSpeed(CurrentBpm.Value) * Time.deltaTime;
+                
+                if (_timer.Value >= -_curSimfile.Offset - OffsetHeight * Time.deltaTime)
                 {
-                    noteParent.Translate(0, -_noteMaker.GetScrollSpeed(_curBpm.Value) * Time.deltaTime, 0);
+                    noteParent.Translate(0, translateAmount, 0);
                 }
 
                 _timer.Value += Time.deltaTime;
-                
-                await UniTask.Yield();
+
+                await UniTask.DelayFrame(1);
             }
         }
     }
