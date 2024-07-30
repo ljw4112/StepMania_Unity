@@ -44,7 +44,7 @@ namespace Runtime.Game
 
         private void Start()
         {
-            Application.targetFrameRate = 100;
+            Application.targetFrameRate = 60;
             
             QualitySettings.vSyncCount = 0;
             
@@ -132,7 +132,7 @@ namespace Runtime.Game
                 
                 if (_timer.Value >= -_curSimfile.Offset - OffsetHeight * Time.deltaTime)
                 {
-                    Translate(noteParent, translateAmount);
+                    noteParent.position += new Vector3(0, translateAmount, 0);
                 }
 
                 _timer.Value += Time.deltaTime;
@@ -140,12 +140,7 @@ namespace Runtime.Game
                 await UniTask.DelayFrame(1);
             }
         }
-
-        private void Translate(Transform tr, float ySpeed)
-        {
-            tr.position += new Vector3(0, ySpeed, 0);
-        }
-
+        
         private void OnGUI()
         {
             int w = Screen.width, h = Screen.height;
