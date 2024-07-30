@@ -20,17 +20,21 @@ namespace Runtime.Game
         [Range(0, 1)]
         public float Red, Green, Blue;
 
-        float deltaTime = 0.0f;
+        private float deltaTime = 0.0f;
         
         public static float ScrollSpeed;
 
-        public const int OffsetHeight = 4;
+        private float _offsetHeight;
+
+        [SerializeField] private Camera _mainCamera;
 
         [SerializeField] private UI.UIRoot UiRoot;
         
         [SerializeField] private NoteMaker _noteMaker;
         
         [SerializeField] private Transform noteParent;
+
+        [SerializeField] private Transform _judgeLine;
 
         private Simfile _simfile;
 
@@ -42,12 +46,12 @@ namespace Runtime.Game
 
         public static readonly ReactiveProperty<float> CurrentBpm = new();
 
+        [SerializeField] private float _height;
+
+        private double _startTime, _requireTime;
+
         private void Start()
         {
-            Application.targetFrameRate = 60;
-            
-            QualitySettings.vSyncCount = 0;
-            
             _combo.Where(x => x > 0).Subscribe(x =>
             {
                 UiRoot.textCombo.SetText(x.ToString());
@@ -79,7 +83,7 @@ namespace Runtime.Game
             // 임시로
             _curSimfile = FileLoader.FileLoad(_playSongName);
 
-            noteParent.transform.position = new Vector3(0, OffsetHeight, 0);
+            SetNoteParentPosition();
             
             UiRoot.textTitle.SetText(_curSimfile.Title);
             
@@ -89,13 +93,45 @@ namespace Runtime.Game
 
             _curSimfile.ConvertData();
 
-            _timer.Value = _curSimfile.Offset - OffsetHeight;
+            _timer.Value = GetStartTime() - 3;
             
             ScrollSpeed = -_noteMaker.GetScrollSpeed(0) * Time.deltaTime;
 
             AudioManager.Instance.SetMusic(_curSimfile.MusicAudioClip);
             
             Play().Forget();
+
+            return;
+
+            void SetNoteParentPosition()
+            {
+                // 카메라 뷰포트 좌표에서 (0.5, 1.0)은 화면의 상단 중앙을 의미합니다.
+                Vector3 screenPosition = new Vector3(0.5f, 1.0f, _mainCamera.nearClipPlane);
+
+                // 스크린 좌표를 월드 좌표로 변환합니다.
+                Vector3 worldPosition = _mainCamera.ViewportToWorldPoint(screenPosition);
+
+                // targetObject의 y 위치를 조정하여 카메라 영역 바로 위에 오도록 합니다.
+                worldPosition.y += _height / 2;
+
+                // targetObject의 위치를 설정합니다.
+                noteParent.transform.position = worldPosition;
+
+                _offsetHeight = noteParent.transform.position.y;
+            }
+
+            double GetStartTime()
+            {
+                double translateAmount = Math.Abs(_noteMaker.GetScrollSpeed(_curSimfile.BPM.Peek().bpm));
+                double distance = Math.Abs(noteParent.transform.position.y - _judgeLine.position.y);
+                _requireTime = distance / translateAmount;
+                
+                Debug.Log($"{distance} / {translateAmount} = {_requireTime}");
+
+                _startTime = _curSimfile.Offset - _requireTime;
+                
+                return _startTime;
+            }
         }
         
         private async UniTaskVoid Play()
@@ -130,7 +166,7 @@ namespace Runtime.Game
             
                 float translateAmount = -_noteMaker.GetScrollSpeed(CurrentBpm.Value) * Time.deltaTime;
                 
-                if (_timer.Value >= -_curSimfile.Offset - OffsetHeight * Time.deltaTime)
+                if (_timer.Value >= -_curSimfile.Offset - _requireTime)
                 {
                     noteParent.position += new Vector3(0, translateAmount, 0);
                 }

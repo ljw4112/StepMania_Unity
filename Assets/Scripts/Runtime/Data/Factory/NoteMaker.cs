@@ -18,7 +18,7 @@ namespace Runtime.Data.Factory
 
         [SerializeField] private Transform trJudgeLine;
 
-        private float _speed = 30;
+        [SerializeField] private float _speed = 30;
 
         /// <summary>
         /// 1마디 움직이는 속도 (두 마디 사이의 거리 / 4분음표 4개 지나가는 시간 ( 60 / bpm * 4 )

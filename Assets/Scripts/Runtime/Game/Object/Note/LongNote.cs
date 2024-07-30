@@ -27,7 +27,7 @@ namespace Runtime.Object.Note
 
         private bool _longNoteStart, _longNoteEnd;
 
-        public LongNote SetPosition(Transform tr, Vector3 start, Vector3 end, float width = 0.5f)
+        public LongNote SetPosition(Transform tr, Vector3 start, Vector3 end)
         {
             if (_renderer == null) return null;
 

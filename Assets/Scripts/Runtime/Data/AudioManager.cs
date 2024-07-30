@@ -1,6 +1,7 @@
-﻿using System;
-using Cysharp.Threading.Tasks;
-using UnityEngine;
+﻿using UnityEngine;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 namespace Runtime.Data
 {
@@ -25,6 +26,10 @@ namespace Runtime.Data
             _musicAudioSource ??= gameObject.AddComponent<AudioSource>();
 
             _musicAudioSource.playOnAwake = false;
+            
+#if UNITY_EDITOR
+            EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
+#endif
         }
         
         public void PlayTick()
@@ -57,5 +62,18 @@ namespace Runtime.Data
             if (Instance != null)
                 Destroy(gameObject);
         }
+
+#if UNITY_EDITOR
+        private void OnPlayModeStateChanged(PlayModeStateChange state)
+        {
+            if (state == PlayModeStateChange.ExitingPlayMode)
+            {
+                if (Instance != null)
+                {
+                    DestroyImmediate(gameObject);
+                }
+            }
+        }
+#endif
     }
 }
