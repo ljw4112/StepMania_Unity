@@ -480,6 +480,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c623e25bc1754454b3219622876d8304, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _playSongName: Shugoku no Medley Chozetsugikou BosoKumiKyoku
+  _difficulty: 2
+  fFont_Size: 50
+  Red: 1
+  Green: 1
+  Blue: 1
   UiRoot: {fileID: 275375291}
   _noteMaker: {fileID: 435791376}
   noteParent: {fileID: 703994579}
