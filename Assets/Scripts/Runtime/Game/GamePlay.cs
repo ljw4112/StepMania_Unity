@@ -9,7 +9,7 @@ using Utils;
 
 namespace Runtime.Game
 {
-    public class GamePlay : MonoSingleton<GamePlay>
+    public class GamePlay : MonoBehaviour
     {
         [SerializeField] private string _playSongName;
 
@@ -24,7 +24,7 @@ namespace Runtime.Game
         
         public static float ScrollSpeed;
 
-        public const int OffsetHeight = 0;
+        public const int OffsetHeight = 4;
 
         [SerializeField] private UI.UIRoot UiRoot;
         
@@ -36,21 +36,22 @@ namespace Runtime.Game
 
         private ReactiveProperty<double> _timer = new();
 
-        private int _combo;
+        public static readonly ReactiveProperty<int> _combo = new();
 
         private Simfile _curSimfile;
 
         public static readonly ReactiveProperty<float> CurrentBpm = new();
 
-        private bool bStart;
-
-        private bool isMultipleBPMChange;
-
         private void Start()
         {
             Application.targetFrameRate = 60;
-
+            
             QualitySettings.vSyncCount = 0;
+            
+            _combo.Where(x => x > 0).Subscribe(x =>
+            {
+                UiRoot.textCombo.SetText(x.ToString());
+            });
 
             _timer.Subscribe(time =>
             {
@@ -65,12 +66,6 @@ namespace Runtime.Game
             InputSystem.Instance.SetInputAction(KeyCode.F5, StartSong);
         }
 
-        public void UpdateCombo()
-        {
-            _combo++;
-            UiRoot.textCombo.SetText(_combo.ToString());
-        }
-
         private void StartSong()
         {
             if (string.IsNullOrEmpty(_playSongName) || _difficulty == Difficulty.None)
@@ -79,7 +74,7 @@ namespace Runtime.Game
                 return;
             }
             
-            _combo = 0;
+            _combo.Value = 0;
             
             // 임시로
             _curSimfile = FileLoader.FileLoad(_playSongName);
@@ -98,48 +93,54 @@ namespace Runtime.Game
             
             ScrollSpeed = -_noteMaker.GetScrollSpeed(0) * Time.deltaTime;
 
-            AudioManager.Instance.SetMusic(_curSimfile.MusicAudioClip).LoadAudio();
+            AudioManager.Instance.SetMusic(_curSimfile.MusicAudioClip);
             
+            Play().Forget();
+        }
+        
+        private async UniTaskVoid Play()
+        {
+            // 노트가 다 만들어지고 Audio파일이 모두 로딩될 때 까지 대기
+            await UniTask.WaitUntil(() => _noteMaker.IsNoteCreated && AudioManager.Instance.LoadAudio());
+
             CurrentBpm.Value = _curSimfile.BPM.Dequeue().bpm;
 
-            isMultipleBPMChange = _curSimfile.BPM.Count > 1;
+            bool isMultipleBPMChange = _curSimfile.BPM.Count > 1;
 
-            bStart = true;
-        }
-
-        private void Update()
-        {
-            deltaTime += (Time.unscaledDeltaTime - deltaTime) * 0.1f;
-            
-            if (!_noteMaker.IsNoteCreated || !bStart) return;
-            
-            if (_timer.Value >= 0 && !AudioManager.Instance.IsPlayingMusic)
+            while (true)
             {
-                AudioManager.Instance.PlayMusic();
-            }
-
-            if (_curSimfile.BPM.Count > 0 && isMultipleBPMChange)
-            {
-                int time = _curSimfile.BPM.Peek().seconds;
-
-                int integerTimer = (int)(_timer.Value * 1000);
-
-                if (Math.Abs(integerTimer - time) < 10)
-                {
-                    CurrentBpm.Value = _curSimfile.BPM.Dequeue().bpm;
-                }
-            }
-            
-            float translateAmount = -_noteMaker.GetScrollSpeed(CurrentBpm.Value) * Time.deltaTime;
+                deltaTime += (Time.unscaledDeltaTime - deltaTime) * 0.1f;
                 
-            if (_timer.Value >= -_curSimfile.Offset - OffsetHeight * Time.deltaTime)
-            {
-                noteParent.position += new Vector3(0, translateAmount, 0);
+                if (_timer.Value >= 0 && !AudioManager.Instance.IsPlayingMusic)
+                {
+                    AudioManager.Instance.PlayMusic();
+                }
+
+                if (_curSimfile.BPM.Count > 0 && isMultipleBPMChange)
+                {
+                    int time = _curSimfile.BPM.Peek().seconds;
+
+                    int integerTimer = (int)(_timer.Value * 1000);
+
+                    if (Math.Abs(integerTimer - time) < 5)
+                    {
+                        CurrentBpm.Value = _curSimfile.BPM.Dequeue().bpm;
+                    }
+                }
+            
+                float translateAmount = -_noteMaker.GetScrollSpeed(CurrentBpm.Value) * Time.deltaTime;
+                
+                if (_timer.Value >= -_curSimfile.Offset - OffsetHeight * Time.deltaTime)
+                {
+                    noteParent.position += new Vector3(0, translateAmount, 0);
+                }
+
+                _timer.Value += Time.deltaTime;
+
+                await UniTask.DelayFrame(1);
             }
-
-            _timer.Value += Time.deltaTime;
         }
-
+        
         private void OnGUI()
         {
             int w = Screen.width, h = Screen.height;
