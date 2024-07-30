@@ -44,8 +44,8 @@ namespace Runtime.Data
 
         public Dictionary<Difficulty, NoteData> NoteDatas { get; } = new();
         public Dictionary<Difficulty, int> Difficulty { get; } = new();
-
         public AudioClip MusicAudioClip { get; set; }
+        public int MinBpmInterval = -1;
         
         public class NoteData
         {
@@ -90,11 +90,18 @@ namespace Runtime.Data
                     continue;
                 }
 
+                int prevSecond = BPM.Last().seconds;
+                
                 double prevSeconds = (double)BPM.Last().seconds / 1000;
                 
                 double time = Math.Round(singleMeasureTime * (measure - prevMeasure) / 4 + prevSeconds, 3);
                 
                 BPM.Enqueue(((int)(time * 1000), bpm));
+                
+                if (MinBpmInterval < 0)
+                    MinBpmInterval = BPM.Peek().seconds - prevSecond;
+                else
+                    MinBpmInterval = Math.Min(MinBpmInterval, BPM.Peek().seconds - prevSecond);
 
                 singleMeasureTime = Math.Round(60 / bpm * 4, 3);
 

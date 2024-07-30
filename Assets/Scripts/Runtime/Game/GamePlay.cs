@@ -11,6 +11,17 @@ namespace Runtime.Game
 {
     public class GamePlay : MonoBehaviour
     {
+        [SerializeField] private string _playSongName;
+
+        [SerializeField] private Difficulty _difficulty;
+        
+        [Range(1, 100)]
+        public int fFont_Size;
+        [Range(0, 1)]
+        public float Red, Green, Blue;
+
+        float deltaTime = 0.0f;
+        
         public static float ScrollSpeed;
 
         public const int OffsetHeight = 4;
@@ -33,7 +44,7 @@ namespace Runtime.Game
 
         private void Start()
         {
-            Application.targetFrameRate = 144;
+            Application.targetFrameRate = 100;
             
             QualitySettings.vSyncCount = 0;
             
@@ -57,10 +68,16 @@ namespace Runtime.Game
 
         private void StartSong()
         {
+            if (string.IsNullOrEmpty(_playSongName) || _difficulty == Difficulty.None)
+            {
+                Debug.LogError("Please check play song name or difficulty");
+                return;
+            }
+            
             _combo.Value = 0;
             
             // 임시로
-            _curSimfile = FileLoader.FileLoad("raputa");
+            _curSimfile = FileLoader.FileLoad(_playSongName);
 
             noteParent.transform.position = new Vector3(0, OffsetHeight, 0);
             
@@ -68,7 +85,7 @@ namespace Runtime.Game
             
             UiRoot.textArtist.SetText(_curSimfile.Artist);
 
-            _noteMaker.SetSimfile(_curSimfile, Difficulty.Edit).InstantiateNote();
+            _noteMaker.SetSimfile(_curSimfile, _difficulty).InstantiateNote();
 
             _curSimfile.ConvertData();
 
@@ -88,19 +105,23 @@ namespace Runtime.Game
 
             CurrentBpm.Value = _curSimfile.BPM.Dequeue().bpm;
 
+            bool isMultipleBPMChange = _curSimfile.BPM.Count > 1;
+
             while (true)
             {
+                deltaTime += (Time.unscaledDeltaTime - deltaTime) * 0.1f;
+                
                 if (_timer.Value >= 0 && !AudioManager.Instance.IsPlayingMusic)
                 {
                     AudioManager.Instance.PlayMusic();
                 }
 
-                if (_curSimfile.BPM.Count > 1)
+                if (_curSimfile.BPM.Count > 0 && isMultipleBPMChange)
                 {
                     int time = _curSimfile.BPM.Peek().seconds;
 
                     int integerTimer = (int)(_timer.Value * 1000);
-                
+
                     if (Math.Abs(integerTimer - time) < 5)
                     {
                         CurrentBpm.Value = _curSimfile.BPM.Dequeue().bpm;
@@ -111,13 +132,34 @@ namespace Runtime.Game
                 
                 if (_timer.Value >= -_curSimfile.Offset - OffsetHeight * Time.deltaTime)
                 {
-                    noteParent.Translate(0, translateAmount, 0);
+                    Translate(noteParent, translateAmount);
                 }
 
                 _timer.Value += Time.deltaTime;
 
                 await UniTask.DelayFrame(1);
             }
+        }
+
+        private void Translate(Transform tr, float ySpeed)
+        {
+            tr.position += new Vector3(0, ySpeed, 0);
+        }
+
+        private void OnGUI()
+        {
+            int w = Screen.width, h = Screen.height;
+
+            GUIStyle style = new GUIStyle();
+
+            Rect rect = new Rect(0, 0, w, h * 0.02f);
+            style.alignment = TextAnchor.UpperLeft;
+            style.fontSize = h * 2 / fFont_Size;
+            style.normal.textColor = new Color(Red, Green, Blue, 1.0f);
+            float msec = deltaTime * 1000.0f;
+            float fps = 1.0f / deltaTime;
+            string text = $"{msec:0.0} ms ({fps:0.} fps)";
+            GUI.Label(rect, text, style);
         }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using Runtime.Game.Object.ObjectPool;
 using Runtime.Object.Note;
 using UnityEngine;
 
@@ -126,9 +127,13 @@ namespace Runtime.Data.Factory
                         Vector3 position = new Vector3(noteXPos[j], yPos * _speed, 0);
 
                         //=== 오브젝트 생성
+                        GameObject noteObj;
+
+                        //noteObj = NotePool.Instance.Get(trNoteParent)?.gameObject;
+
                         var obj = Resources.Load<GameObject>("Prefab/Note");
 
-                        var noteObj = Instantiate(obj, trNoteParent);
+                        noteObj = Instantiate(obj, trNoteParent);
 
                         noteObj.transform.localPosition = position;
 
@@ -152,16 +157,6 @@ namespace Runtime.Data.Factory
 
                 // 마디선 생성
                 var lineObj = Instantiate(Resources.Load<GameObject>("Prefab/Line"), trNoteParent);
-
-                // if (lineObj.transform.TryGetComponent<Object.Line.Line>(out var lineComponent))
-                // {
-                //     lineComponent.SetLineNum(measure.Key);
-                //     
-                //     // 마디선 실제 시간 계산
-                //     double realTime = -_simfile.Offset + _bpmRatio * 4 * measure.Key;
-                //     
-                //     lineComponent.SetLineSeconds(realTime);
-                // }
 
                 // 마디선의 Y좌표 계산, 마디선은 해당 마디의 첫번째 노트와 좌표가 똑같아야 된다.
                 float lineY = measure.Key * _speed;

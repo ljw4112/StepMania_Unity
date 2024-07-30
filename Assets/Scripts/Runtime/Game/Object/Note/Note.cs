@@ -1,5 +1,6 @@
 ﻿using R3;
 using Runtime.Game;
+using Runtime.Game.Object.ObjectPool;
 using UnityEngine;
 
 namespace Runtime.Object.Note
@@ -37,16 +38,23 @@ namespace Runtime.Object.Note
 
         private void Start()
         {
-            //if (!_canPlayTickSound) return;
-            
             var d = Disposable.CreateBuilder();
             
             Observable.EveryUpdate().Subscribe(_ =>
             {
+                // float negDistance = _judgeLine.position.y - currentYPos;
+                //
+                // if (negDistance > 1f)
+                // {
+                //     NotePool.Instance.Pool(this);
+                //     
+                //     return;
+                // }
+                
                 if (_isCalculated) return;
                 
                 if (_judgeLine == null) return;
-
+                
                 float currentYPos = transform.position.y - GamePlay.ScrollSpeed;
                 
                 float distance = Mathf.Abs(_judgeLine.position.y - currentYPos);
